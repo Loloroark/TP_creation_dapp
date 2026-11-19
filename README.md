@@ -1,4 +1,4 @@
-# Gestion de tickets — TP Mise en production & Hébergement (YNOV)
+# Gestion de tickets — TP Mise en production & Hébergement
 
 > TP Mise en production & Hébergement — YNOV — 19 novembre 2026
 
