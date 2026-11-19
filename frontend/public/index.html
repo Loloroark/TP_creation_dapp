@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestion des tickets</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Support informatique</h1>
+    <p class="sous-titre">Déclarez un incident et suivez sa résolution</p>
+  </header>
+
+  <main>
+    <section class="carte">
+      <h2>Nouveau ticket</h2>
+      <form id="form-ticket">
+        <label for="titre">Titre</label>
+        <input id="titre" name="titre" type="text" maxlength="200" required
+               placeholder="Ex. : Imprimante du 2e étage en panne">
+
+        <label for="description">Description</label>
+        <textarea id="description" name="description" rows="4" maxlength="5000"
+                  placeholder="Décrivez le problème…"></textarea>
+
+        <button type="submit">Créer le ticket</button>
+        <p id="message-form" class="message" role="status"></p>
+      </form>
+    </section>
+
+    <section>
+      <div class="entete-liste">
+        <h2>Tickets</h2>
+        <button id="btn-rafraichir" type="button" class="secondaire">Actualiser</button>
+      </div>
+      <p id="message-liste" class="message" role="status"></p>
+      <ul id="liste-tickets"></ul>
+    </section>
+  </main>
+
+  <footer>TP YNOV · Mise en production &amp; Hébergement · v1</footer>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

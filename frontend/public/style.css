@@ -1,0 +1,116 @@
+:root {
+  --fond: #f4f5f7;
+  --carte: #ffffff;
+  --texte: #1f2328;
+  --discret: #656d76;
+  --bordure: #d0d7de;
+  --accent: #2f6feb;
+  --ouvert: #d1242f;
+  --en-cours: #bf8700;
+  --resolu: #1a7f37;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--fond);
+  color: var(--texte);
+  line-height: 1.5;
+}
+
+header, main, footer {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+header { padding-top: 32px; }
+h1 { margin: 0; }
+.sous-titre { margin: 4px 0 24px; color: var(--discret); }
+h2 { font-size: 1.2rem; margin: 0 0 12px; }
+
+.carte {
+  background: var(--carte);
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 32px;
+}
+
+label { display: block; font-weight: 600; margin: 12px 0 4px; }
+label:first-of-type { margin-top: 0; }
+
+input, textarea, select {
+  width: 100%;
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--bordure);
+  border-radius: 6px;
+  background: #fff;
+}
+
+button {
+  margin-top: 16px;
+  font: inherit;
+  font-weight: 600;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+button:disabled { opacity: 0.6; cursor: wait; }
+button.secondaire {
+  margin: 0;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--bordure);
+}
+
+.entete-liste {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.entete-liste h2 { margin: 0; }
+
+.message { min-height: 1.5em; margin: 8px 0 0; color: var(--discret); }
+.message.erreur { color: var(--ouvert); }
+.message.succes { color: var(--resolu); }
+
+#liste-tickets { list-style: none; padding: 0; margin: 0; }
+
+.ticket {
+  background: var(--carte);
+  border: 1px solid var(--bordure);
+  border-left: 5px solid var(--bordure);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.ticket.statut-ouvert   { border-left-color: var(--ouvert); }
+.ticket.statut-en_cours { border-left-color: var(--en-cours); }
+.ticket.statut-resolu   { border-left-color: var(--resolu); }
+
+.ticket h3 { margin: 0 0 4px; font-size: 1.05rem; }
+.ticket p { margin: 0 0 12px; white-space: pre-wrap; }
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  color: var(--discret);
+  font-size: 0.9rem;
+}
+.meta select { width: auto; }
+
+footer {
+  margin: 32px auto;
+  color: var(--discret);
+  font-size: 0.85rem;
+}
