@@ -59,7 +59,7 @@ app.get('/health', async (req, res) => {
 // F1 — Lister les tickets
 app.get('/api/tickets', async (req, res, next) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM tickets ORDER BY created_at DESC, id DESC');
+    const { rows } = await pool.query('SELECT * FROM tickets ORDER BY id ASC');
     res.json(rows);
   } catch (err) {
     next(err);
