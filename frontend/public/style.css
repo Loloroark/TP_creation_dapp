@@ -109,6 +109,19 @@ button.secondaire {
 }
 .meta select { width: auto; }
 
+.actions { display: flex; align-items: center; gap: 8px; }
+
+button.supprimer {
+  margin: 0;
+  padding: 7px 12px;
+  background: transparent;
+  color: var(--ouvert);
+  border: 1px solid var(--ouvert);
+}
+button.supprimer:hover { background: var(--ouvert); color: #fff; }
+
+.numero { color: var(--discret); font-weight: 600; margin-right: 4px; }
+
 footer {
   margin: 32px auto;
   color: var(--discret);

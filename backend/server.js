@@ -120,6 +120,53 @@ app.patch('/api/tickets/:id', async (req, res, next) => {
   }
 });
 
+// Supprimer un ticket, puis renuméroter les ID pour qu'ils restent continus (1, 2, 3…)
+app.delete('/api/tickets/:id', async (req, res, next) => {
+  const id = Number(req.params.id);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ error: 'Identifiant invalide.' });
+  }
+
+  // Tout se fait dans une transaction : soit tout réussit, soit rien n'est modifié
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    // Empêche une autre requête d'écrire dans la table pendant la renumérotation
+    await client.query('LOCK TABLE tickets IN EXCLUSIVE MODE');
+
+    const { rowCount } = await client.query('DELETE FROM tickets WHERE id = $1', [id]);
+    if (rowCount === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Ticket introuvable.' });
+    }
+
+    // Renumérotation en deux temps pour ne jamais créer deux fois le même ID :
+    // 1) on passe tous les ID en négatif, 2) on les renumérote 1, 2, 3… dans l'ordre d'origine
+    await client.query('UPDATE tickets SET id = -id');
+    await client.query(`
+      UPDATE tickets t
+      SET id = r.nouvel_id
+      FROM (SELECT id, ROW_NUMBER() OVER (ORDER BY id DESC) AS nouvel_id FROM tickets) r
+      WHERE t.id = r.id
+    `);
+
+    // Le prochain ticket créé prendra l'ID suivant le dernier existant
+    await client.query(`
+      SELECT setval(pg_get_serial_sequence('tickets', 'id'),
+                    COALESCE((SELECT MAX(id) FROM tickets), 0) + 1, false)
+    `);
+
+    await client.query('COMMIT');
+    res.json({ message: 'Ticket supprimé.', id });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    next(err);
+  } finally {
+    client.release();
+  }
+});
+
 // Route inconnue
 app.use((req, res) => {
   res.status(404).json({ error: 'Route introuvable.' });

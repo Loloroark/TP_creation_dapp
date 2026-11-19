@@ -118,14 +118,18 @@ Ouvrir **http://localhost:5173**.
 | GET | `/api/tickets` | Liste des tickets | — | 200 |
 | POST | `/api/tickets` | Crée un ticket | `{ "titre": "...", "description": "..." }` | 201, 400 |
 | PATCH | `/api/tickets/:id` | Modifie le statut | `{ "statut": "en_cours" }` | 200, 400, 404 |
+| DELETE | `/api/tickets/:id` | Supprime le ticket et renumérote les ID | — | 200, 400, 404 |
 
 Statuts autorisés : `ouvert`, `en_cours`, `resolu` (contrôlés par l'API **et** par une contrainte `CHECK` en base).
+
+**Renumérotation des ID :** après une suppression, les ID restent continus. Avec les tickets 1, 2, 3, supprimer le 1 donne 1, 2 (l'ancien 2 devient 1, l'ancien 3 devient 2), et le prochain ticket créé prendra l'ID 3. La suppression et la renumérotation se font dans une seule transaction SQL, avec la table verrouillée pendant l'opération : soit tout réussit, soit rien n'est modifié. Comme un ID peut changer, le frontend recharge la liste après chaque suppression.
 
 Tester en PowerShell :
 
 ```powershell
 Invoke-RestMethod -Method Post -Uri http://localhost:3000/api/tickets -ContentType "application/json" -Body '{"titre":"Test","description":"Depuis PowerShell"}'
 Invoke-RestMethod -Method Patch -Uri http://localhost:3000/api/tickets/1 -ContentType "application/json" -Body '{"statut":"en_cours"}'
+Invoke-RestMethod -Method Delete -Uri http://localhost:3000/api/tickets/1
 ```
 
 ## Déploiement sur Scalingo

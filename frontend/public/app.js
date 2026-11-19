@@ -53,7 +53,10 @@ function creerElementTicket(ticket) {
   li.className = `ticket statut-${ticket.statut}`;
 
   const titre = document.createElement('h3');
-  titre.textContent = ticket.titre;
+  const numero = document.createElement('span');
+  numero.className = 'numero';
+  numero.textContent = `#${ticket.id}`;
+  titre.append(numero, ' ', ticket.titre);
 
   const description = document.createElement('p');
   description.textContent = ticket.description || '(pas de description)';
@@ -91,7 +94,29 @@ function creerElementTicket(ticket) {
     }
   });
 
-  meta.append(date, select);
+  // Supprimer le ticket (les ID des suivants sont renumérotés par l'API)
+  const supprimer = document.createElement('button');
+  supprimer.type = 'button';
+  supprimer.className = 'supprimer';
+  supprimer.textContent = 'Supprimer';
+  supprimer.addEventListener('click', async () => {
+    if (!confirm(`Supprimer le ticket « ${ticket.titre} » ?`)) return;
+    supprimer.disabled = true;
+    try {
+      await api(`/api/tickets/${ticket.id}`, { method: 'DELETE' });
+      // Les ID ont changé : on recharge toute la liste
+      await chargerTickets();
+    } catch (err) {
+      alert(`Erreur : ${err.message}`);
+      supprimer.disabled = false;
+    }
+  });
+
+  const actions = document.createElement('div');
+  actions.className = 'actions';
+  actions.append(select, supprimer);
+
+  meta.append(date, actions);
   li.append(titre, description, meta);
   return li;
 }
