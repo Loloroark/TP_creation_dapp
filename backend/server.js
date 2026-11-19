@@ -27,6 +27,15 @@ const pool = new Pool({ connectionString: DATABASE_URL });
 // ---------- Application ----------
 const app = express();
 
+// En production, Scalingo indique le protocole d'origine dans x-forwarded-proto.
+// Toute requête arrivée en HTTP est redirigée vers HTTPS (308 conserve la méthode POST/PATCH).
+app.use((req, res, next) => {
+  if (req.headers['x-forwarded-proto'] === 'http') {
+    return res.redirect(308, `https://${req.headers.host}${req.originalUrl}`);
+  }
+  next();
+});
+
 app.use(express.json({ limit: '10kb' }));
 
 if (CORS_ORIGIN) {

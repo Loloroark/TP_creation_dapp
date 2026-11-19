@@ -2,7 +2,19 @@
 
 Application web permettant de déclarer un incident informatique, de consulter les tickets existants et de suivre leur résolution.
 
+## Livrables
+
+| Livrable | Emplacement |
+|---|---|
+| 1 — Documentation | Ce README |
+| 2 — Application déployée | [URL publiques](#url-publiques) |
+| 3 — Schéma d'architecture | [docs/architecture.svg](docs/architecture.svg) |
+| 4 — Compte rendu technique | [docs/compte-rendu.md](docs/compte-rendu.md) |
+| 5 — Démonstration orale | [docs/demo.md](docs/demo.md) (déroulé + checklist) |
+
 ## Architecture trois tiers
+
+![Schéma d'architecture](docs/architecture.svg)
 
 ```
 Navigateur ──HTTPS──▶ Frontend (Scalingo : tickets-front)
@@ -42,6 +54,7 @@ Statuts autorisés : `ouvert`, `en_cours`, `resolu` (contrôlés par l'API **et*
 ```
 backend/    API Express (server.js, db/schema.sql, Procfile)
 frontend/   Interface (public/) + serveur statique (server.js, Procfile)
+docs/       Schéma d'architecture, compte rendu technique, démonstration
 ```
 
 ## Lancer en local
@@ -69,6 +82,14 @@ La table `tickets` est créée automatiquement au démarrage de l'API (`backend/
 2. **tickets-api** : variable `PROJECT_DIR=backend`, ajouter l'addon PostgreSQL (crée `SCALINGO_POSTGRESQL_URL`), variable `CORS_ORIGIN=<URL du frontend>`.
 3. **tickets-front** : variable `PROJECT_DIR=frontend`, variable `API_URL=<URL de l'API>`.
 4. Activer le déploiement automatique sur la branche `main` : chaque push redéploie les apps.
+5. Vérifier dans les logs de l'API : `Base de données prête.` puis `API démarrée`, et tester `<URL API>/health`.
+
+## Redéploiement automatique (CI/CD)
+
+1. Modifier un élément visible (ex. : `v1` → `v2` dans le pied de page de `frontend/public/index.html`).
+2. `git commit` puis `git push` sur la branche liée à Scalingo.
+3. Scalingo lance automatiquement un nouveau build et déploiement (onglet *Deployments*).
+4. Vérifier la modification sur l'URL publique du frontend.
 
 ## Variables d'environnement
 
@@ -85,3 +106,4 @@ La table `tickets` est créée automatiquement au démarrage de l'API (`backend/
 - Les identifiants de la base ne sont connus que du backend ; le frontend ne connaît que l'URL de l'API.
 - Les entrées sont validées par l'API, les requêtes SQL sont paramétrées.
 - CORS limité à l'URL du frontend.
+- HTTP redirigé automatiquement vers HTTPS sur les deux apps.
