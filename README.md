@@ -1,6 +1,6 @@
-# Gestion de tickets — TP Mise en production & Hébergement
+# Gestion de tickets — TP Mise en production & Hébergement (YNOV)
 
-> TP Mise en production & Hébergement — YNOV — 19 novembre 2026
+> TP Mise en production & Hébergement — 19 novembre 2026
 
 Application web permettant de déclarer un incident informatique, de consulter les tickets existants et de suivre leur résolution.
 
@@ -63,17 +63,105 @@ Table `tickets`, créée automatiquement au démarrage de l'API (`backend/db/sch
 
 Les statuts sont contrôlés par l'API **et** par une contrainte `CHECK` en base.
 
+## Structure du dépôt
+
+```
+backend/
+  server.js         API Express (routes, validation, CORS)
+  db/schema.sql     Création de la table tickets
+  Procfile          Commande de démarrage pour Scalingo
+  .env.example      Modèle de configuration locale
+frontend/
+  server.js         Serveur des fichiers statiques + /config.js (URL de l'API)
+  public/           index.html, app.js, style.css
+  Procfile          Commande de démarrage pour Scalingo
+```
+
+## Lancer l'application en local
+
+### Prérequis
+
+- [Node.js 22](https://nodejs.org/)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (pour la base PostgreSQL), ou un PostgreSQL installé
+
+### 1. Démarrer la base de données
+
+Lancer Docker Desktop, puis (première fois seulement) :
+
+```bash
+docker run -d --name tickets-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=tickets -p 5432:5432 postgres:16
+```
+
+Les fois suivantes :
+
+```bash
+docker start tickets-db
+```
+
+### 2. Démarrer l'API (terminal 1)
+
+```bash
+cd backend
+npm install
+```
+
+Créer le fichier `backend/.env` à partir du modèle (`cp .env.example .env`, ou en PowerShell `Copy-Item .env.example .env`), puis y mettre :
+
+```
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/tickets
+CORS_ORIGIN=http://localhost:5173
+PORT=3000
+```
+
+```bash
+npm start
+```
+
+Le terminal doit afficher `Base de données prête.` puis `API démarrée sur le port 3000`. La table `tickets` est créée automatiquement au démarrage.
+
+### 3. Démarrer le frontend (terminal 2)
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+Ouvrir **http://localhost:5173**.
+
+### 4. Vérifier
+
+| Adresse | Résultat attendu |
+|---|---|
+| http://localhost:3000/health | `{"status":"ok","database":"ok"}` |
+| http://localhost:3000/api/tickets | Liste des tickets en JSON |
+| http://localhost:5173 | Interface : créer un ticket, changer son statut |
+
+> `http://localhost:3000/` renvoie `{"error":"Route introuvable."}` : c'est normal, les routes de l'API sont sous `/api/` et `/health`.
+
+### Erreurs fréquentes
+
+| Message | Cause | Solution |
+|---|---|---|
+| `aucune URL de base de données` | Pas de fichier `backend/.env` | Créer le `.env` (étape 2) |
+| `ECONNREFUSED ... 5432` | PostgreSQL ne tourne pas | Lancer Docker Desktop puis `docker start tickets-db` |
+| `Impossible de charger les tickets` dans la page | L'API n'est pas lancée, ou mauvais `CORS_ORIGIN` | Vérifier le terminal 1 et la valeur de `CORS_ORIGIN` |
+
 ## API
 
-| Méthode | Route | Rôle | Codes |
-|---------|-------|------|-------|
-| GET | `/health` | Vérifie l'API et la base | 200, 503 |
-| GET | `/api/tickets` | Liste des tickets | 200 |
-| POST | `/api/tickets` | Crée un ticket `{ titre, description }` | 201, 400 |
-| PATCH | `/api/tickets/:id` | Modifie le statut `{ statut }` | 200, 400, 404 |
-| DELETE | `/api/tickets/:id` | Supprime un ticket | 200, 400, 404 |
+| Méthode | Route | Rôle | Corps de la requête | Codes |
+|---|---|---|---|---|
+| GET | `/health` | Vérifie l'API et la base | — | 200, 503 |
+| GET | `/api/tickets` | Liste des tickets (triés par identifiant croissant) | — | 200 |
+| POST | `/api/tickets` | Crée un ticket | `{ "titre": "...", "description": "..." }` | 201, 400 |
+| PATCH | `/api/tickets/:id` | Modifie le statut | `{ "statut": "en_cours" }` | 200, 400, 404 |
+| DELETE | `/api/tickets/:id` | Supprime le ticket et renumérote les ID | — | 200, 400, 404 |
 
-Les tickets sont renvoyés triés par identifiant croissant. Toutes les réponses sont au format JSON. Les erreurs renvoient `{ "error": "message" }`.
+Toutes les réponses sont au format JSON. Les erreurs renvoient `{ "error": "message" }`.
+
+**Renumérotation des ID :** après une suppression, les ID restent continus. Avec les tickets 1, 2, 3, supprimer le 1 donne 1, 2 (l'ancien 2 devient 1, l'ancien 3 devient 2), et le prochain ticket créé prendra l'ID 3. La suppression et la renumérotation se font dans une seule transaction SQL, avec la table verrouillée pendant l'opération : soit tout réussit, soit rien n'est modifié. Comme un ID peut changer, le frontend recharge la liste après chaque suppression.
+
+Tester l'API en ligne (bash) :
 
 ```bash
 curl -X POST https://backend-app.osc-fr1.scalingo.io/api/tickets \
@@ -81,44 +169,41 @@ curl -X POST https://backend-app.osc-fr1.scalingo.io/api/tickets \
   -d '{"titre": "Imprimante en panne", "description": "Étage 2"}'
 ```
 
-## Structure du dépôt
+Tester l'API en local (PowerShell) :
 
-```
-backend/    API Express (server.js, db/schema.sql, Procfile)
-frontend/   Interface (public/) + serveur statique (server.js, Procfile)
-```
-
-## Lancer en local
-
-Prérequis : Node.js 22, une base PostgreSQL.
-
-```bash
-cd backend
-cp .env.example .env      # puis renseigner DATABASE_URL
-npm install
-npm start                 # http://localhost:3000
-```
-
-```bash
-cd frontend
-npm install
-npm start                 # http://localhost:5173
+```powershell
+Invoke-RestMethod -Method Post -Uri http://localhost:3000/api/tickets -ContentType "application/json" -Body '{"titre":"Test","description":"Depuis PowerShell"}'
+Invoke-RestMethod -Method Patch -Uri http://localhost:3000/api/tickets/1 -ContentType "application/json" -Body '{"statut":"en_cours"}'
+Invoke-RestMethod -Method Delete -Uri http://localhost:3000/api/tickets/1
 ```
 
 ## Déploiement sur Scalingo
 
-1. Créer deux apps Scalingo liées au même dépôt GitHub.
-2. **backend-app** : variable `PROJECT_DIR=backend`, ajouter l'addon PostgreSQL (crée `SCALINGO_POSTGRESQL_URL`), variable `CORS_ORIGIN=<URL du frontend>`.
-3. **frontend-app** : variable `PROJECT_DIR=frontend`, variable `API_URL=<URL de l'API>`.
-4. Activer le déploiement automatique sur la branche `main` : chaque push redéploie les apps.
-5. Vérifier les logs et tester `/health`.
+1. Créer deux apps Scalingo liées au dépôt GitHub : `backend-app` et `frontend-app`.
+2. **backend-app** :
+   - variable `PROJECT_DIR=backend`
+   - ajouter l'addon **PostgreSQL** (crée automatiquement `SCALINGO_POSTGRESQL_URL`)
+   - variable `CORS_ORIGIN=<URL du frontend>`
+3. **frontend-app** :
+   - variable `PROJECT_DIR=frontend`
+   - variable `API_URL=<URL de l'API>`
+4. Activer le déploiement automatique sur la branche `main`.
+5. Vérifier les logs de l'API (`Base de données prête.` puis `API démarrée`) et ouvrir `<URL API>/health`.
 
+## Redéploiement automatique (CI/CD)
+
+1. Modifier un élément visible (ex. : `v1` → `v2` dans le pied de page de `frontend/public/index.html`).
+2. `git commit` puis `git push` sur la branche liée à Scalingo.
+3. Scalingo lance automatiquement un nouveau déploiement (onglet *Deployments*).
+4. Vérifier la modification sur l'URL publique du frontend.
+
+**Résultat du test :** _à compléter (commit effectué, déploiement observé, modification visible en ligne)._
 
 ## Variables d'environnement
 
 | App | Variable | Rôle |
-|-----|----------|------|
-| API | `SCALINGO_POSTGRESQL_URL` | Connexion à la base (créée par l'addon, jamais commitée) |
+|---|---|---|
+| API | `SCALINGO_POSTGRESQL_URL` | Connexion à la base en production (créée par l'addon) |
 | API | `DATABASE_URL` | Connexion à la base en local (fichier `.env`) |
 | API | `CORS_ORIGIN` | Origine(s) autorisée(s) à appeler l'API |
 | Front | `API_URL` | URL publique de l'API, transmise au navigateur via `/config.js` |
@@ -131,5 +216,5 @@ npm start                 # http://localhost:5173
 - Les identifiants de la base ne sont connus que du backend ; le frontend ne connaît que l'URL de l'API.
 - Les entrées sont validées par l'API (titre obligatoire de 200 caractères maximum, description de 5000 maximum, statut parmi les trois valeurs, identifiant entier) et les requêtes SQL sont paramétrées.
 - CORS limité à l'URL du frontend grâce à `CORS_ORIGIN` (sans cette variable, l'API accepte toutes les origines).
-- Services exposés en HTTPS : toute requête HTTP est redirigée vers HTTPS.
+- Services exposés en HTTPS : toute requête HTTP est redirigée vers HTTPS sur les deux apps.
 - Les erreurs internes sont journalisées côté serveur, sans détail renvoyé au client.

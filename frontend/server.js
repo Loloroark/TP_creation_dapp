@@ -8,6 +8,14 @@ const API_URL = process.env.API_URL || 'http://localhost:3000';
 
 const app = express();
 
+// En production, toute requête arrivée en HTTP est redirigée vers HTTPS
+app.use((req, res, next) => {
+  if (req.headers['x-forwarded-proto'] === 'http') {
+    return res.redirect(301, `https://${req.headers.host}${req.originalUrl}`);
+  }
+  next();
+});
+
 // Le navigateur charge /config.js pour connaître l'URL de l'API.
 // Changer API_URL dans Scalingo suffit, pas besoin de modifier le code.
 app.get('/config.js', (req, res) => {
